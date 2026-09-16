@@ -11,8 +11,7 @@ import javax.swing.border.EmptyBorder
 
 object Dialogs {
 
-    private fun wrapText(text: String, maxWidth: Int = 50): String {
-        if (text.length <= maxWidth) return text
+    private fun wrapText(text: String, maxWidth: Int = 50): String {        if (text.length <= maxWidth) return text
 
         val words = text.split(" ")
         val result = StringBuilder()
@@ -35,6 +34,26 @@ object Dialogs {
         }
 
         return result.toString()
+    }
+
+    /**
+     * Dialog copy goes in a text area rather than a label. A label ignores line breaks, so a long
+     * message becomes a single line that is clipped to an ellipsis once the dialog hits the screen
+     * edge, which is exactly where install results and failure reasons get lost.
+     */
+    private fun messageArea(text: String): JTextArea = JTextArea(text).apply {
+        font = Design.Typography.bodyLarge
+        foreground = Design.Colors.onSurface
+        background = Design.Colors.surface
+        isEditable = false
+        isOpaque = false
+        lineWrap = true
+        wrapStyleWord = true
+        // Sized to the width wrapText() already limited the lines to, so nothing gets clipped
+        columns = 50
+        rows = 0
+        alignmentX = Component.CENTER_ALIGNMENT
+        horizontalAlignment = SwingConstants.CENTER
     }
 
     private fun createDialog(parent: Component?): JDialog {
@@ -87,11 +106,7 @@ object Dialogs {
             else -> null
         }
 
-        val messageLabel = JLabel(wrapText(message)).apply {
-            font = Design.Typography.bodyLarge
-            foreground = Design.Colors.onSurface
-            horizontalAlignment = SwingConstants.CENTER
-        }
+        val messageLabel = messageArea(wrapText(message))
 
         val contentPanel = JPanel().apply {
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
@@ -130,11 +145,7 @@ object Dialogs {
         val dialog = createDialog(parent)
         var result = JOptionPane.CANCEL_OPTION
 
-        val messageLabel = JLabel(message).apply {
-            font = Design.Typography.bodyLarge
-            foreground = Design.Colors.onSurface
-            horizontalAlignment = SwingConstants.CENTER
-        }
+        val messageLabel = messageArea(wrapText(message))
 
         val contentPanel = JPanel().apply {
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
