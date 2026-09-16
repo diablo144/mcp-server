@@ -19,6 +19,45 @@ For more information about the protocol visit: [modelcontextprotocol.io](https:/
 - Configure your MCP client to use the Burp SSE MCP server or stdio proxy
 - Interact with Burp through your client!
 
+## Quickstart: Burp + Gemini CLI end to end
+
+1. **Prerequisites** - Java 21+ on your `PATH` (with `jar` available), Burp Suite (Pro or Community),
+   Node.js 20+ and the Gemini CLI (`npm install -g @google/gemini-cli`).
+2. **Build the extension**
+
+   ```bash
+   git clone https://github.com/PortSwigger/mcp-server.git
+   cd mcp-server && ./gradlew embedProxyJar
+   ```
+
+   The JAR lands in `build/libs/burp-mcp-all.jar`.
+3. **Load it into Burp** - `Extensions` → `Add` → Extension type `Java` → select that JAR → `Next`.
+4. **Turn the server on** - in the `MCP` tab, enable the toggle. Leave host `127.0.0.1` and port
+   `9876` unless you know why you'd change them. Check `Require approval for HTTP requests` and
+   `Require approval for project data access` are on: that's what keeps the model from hitting or
+   reading targets you didn't agree to.
+5. **Install to Gemini CLI** - in the same tab, under `Installation`, press `Install to Gemini CLI`.
+   That writes `mcpServers.burp` into `~/.gemini/settings.json` without touching your other settings.
+6. **Confirm the server answers**
+
+   ```bash
+   curl -N -H "Accept: text/event-stream" http://127.0.0.1:9876/ | head -2
+   gemini mcp list
+   ```
+
+   The `curl` should print an `event: endpoint` line, and the list should show `burp` as connected.
+7. **Use it** - from a folder you trust (or with `--skip-trust` to test):
+
+   ```bash
+   gemini
+   ```
+
+   Then `/mcp` to see the discovered tools, and ask for something like
+   *"what domains are in my proxy history?"* or *"put this request in a Repeater tab"*.
+
+If any step doesn't behave, see [Gemini CLI Client](#gemini-cli-client) for the options worth
+knowing about and [Troubleshooting](#troubleshooting) for the common failure modes.
+
 ## Installation
 
 ### Prerequisites
