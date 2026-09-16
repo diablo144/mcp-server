@@ -53,7 +53,6 @@ object Dialogs {
         columns = 50
         rows = 0
         alignmentX = Component.CENTER_ALIGNMENT
-        horizontalAlignment = SwingConstants.CENTER
     }
 
     private fun createDialog(parent: Component?): JDialog {
