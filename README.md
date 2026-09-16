@@ -9,7 +9,7 @@ For more information about the protocol visit: [modelcontextprotocol.io](https:/
 ## Features
 
 - Connect Burp Suite to AI clients through MCP
-- Automatic installation for Claude Desktop
+- Automatic installation for Claude Desktop and Gemini CLI
 - Comes with packaged Stdio MCP proxy server
 
 ## Usage
@@ -104,6 +104,76 @@ The extension has an installer which will automatically configure the client set
       ```
 
 3. **Restart Claude Desktop** - assuming Burp is running with the extension loaded.
+
+### Gemini CLI Client
+
+The extension can configure the Gemini CLI for you as well. Press `Install to Gemini CLI` in the
+extension settings and the Burp MCP server is added to `~/.gemini/settings.json` (on Windows that is
+`%USERPROFILE%\.gemini\settings.json`). Anything else in that file - your auth type, theme, other MCP
+servers - is left as it is, and an existing `burp` entry is replaced rather than duplicated.
+
+Gemini CLI starts the packaged stdio proxy itself, so the connection recovers on its own when Burp is
+restarted. After installing:
+
+1. Start Burp with the extension loaded and the MCP server enabled.
+2. Run `gemini mcp list` to check that `burp` is configured, and `gemini` to load the tools.
+   Inside a session, `/mcp` shows the tools that were discovered.
+3. Keep the folder you run Gemini CLI from trusted. Gemini CLI disables MCP servers in folders you
+   haven't trusted, which is the usual reason for the tools not showing up at all.
+
+Every Burp tool call is confirmed by Gemini CLI, and requests to targets you haven't approved are
+confirmed by Burp. If you want Gemini CLI to skip its own prompts for this server, add
+`"trust": true` to the entry. Prefer to let Burp do the approval instead, which is the default.
+
+To do the same thing from a terminal, or to connect over SSE instead of the proxy, use the Gemini CLI
+installer:
+
+```bash
+# stdio, through the proxy packaged with the extension
+gemini mcp add --scope user burp "/path/to/packaged/java" -jar /path/to/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
+
+# or point Gemini CLI at the extension's SSE server directly, without the proxy
+gemini mcp add --scope user --transport sse burp http://127.0.0.1:9876
+```
+
+The server exposes its SSE endpoint at the configured root URL, so no `/sse` suffix is needed.
+
+The Burp MCP server exposes a lot of tools, which costs context on every prompt. Gemini CLI can limit
+them per server with `includeTools` / `excludeTools`, for example to keep a scan focused on traffic
+instead of configuration:
+
+```json
+{
+  "mcpServers": {
+    "burp": {
+      "command": "/path/to/packaged/java",
+      "args": [
+        "-jar",
+        "/path/to/mcp-proxy-all.jar",
+        "--sse-url",
+        "http://127.0.0.1:9876"
+      ],
+      "excludeTools": ["set_project_options", "set_user_options", "set_active_editor_contents"],
+      "timeout": 600000
+    }
+  }
+}
+```
+
+`gemini mcp remove burp` removes the entry again.
+
+#### Troubleshooting
+
+- **`gemini mcp list` reports the server as `Disabled`** - the current folder isn't trusted. Gemini
+  CLI refuses to start MCP servers in folders you haven't trusted; trust it and start again.
+- **The server is listed but no tools load** - Burp isn't running or the MCP server toggle is off.
+  The proxy reconnects by itself once Burp's server answers.
+- **Tools disappeared after changing the port or host** - the installed entry contains the address
+  from when it was written. Press `Install to Gemini CLI` again.
+- **`✗ burp: ... (stdio) - Disconnected` with a java path that no longer exists** - Burp's bundled
+  runtime moved, typically after an upgrade, or Burp itself is sandboxed (Snap/Flatpak) so the
+  client can't execute it. Re-run the installer, point `command` at a Java on your `PATH`, or
+  connect over SSE instead.
 
 ## Manual installations
 If you want to install the MCP server manually you can either use the extension's SSE server directly or the packaged
